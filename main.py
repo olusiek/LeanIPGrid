@@ -18,3 +18,4 @@ async def get_specific_network(network):
 @LeanIPGrid.get("/networks")
 async def list_networks():
     return {"message": "list of all network"}
+
