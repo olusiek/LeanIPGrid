@@ -19,11 +19,11 @@ async def get_specific_network(network):
 async def list_networks():
     return {"message": "list of all network"}
 
-@LeanIPGrid.get("/node/{cidr}")
+@LeanIPGrid.get("/node/{node}")
 async def get_cidr(cidr):
     return {"cidr": cidr}
 
-@LeanIPGrid.post("/node/{cidr}")
+@LeanIPGrid.post("/node/{node}")
 async def get_cidr(cidr):
     return {"cidr": cidr}
 
