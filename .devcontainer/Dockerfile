@@ -5,6 +5,11 @@ FROM python:3.10
 #    apt install -y sudo && \
 #    sudo apt install default-jdk -y
 
+#Install SQLite3
+RUN apt update && \
+    apt install -y sudo && \
+    sudo apt install sqlite3 -y
+
 ## Pip dependencies
 # Upgrade pip
 RUN pip install --upgrade pip
