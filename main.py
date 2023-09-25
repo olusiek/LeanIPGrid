@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
 
 LeanIPGrid = FastAPI()
 
@@ -22,6 +23,12 @@ async def list_networks():
 @LeanIPGrid.get("/node/{node}")
 async def get_cidr(cidr):
     return {"cidr": cidr}
+
+class Node(BaseModel):
+    name: str
+    description: str = None
+    key: str
+    ip: str
 
 @LeanIPGrid.post("/node/{node}")
 async def get_cidr(cidr):
