@@ -17,31 +17,52 @@ cursor.execute("SELECT * FROM nodes WHERE node = 'this'")
 
 this = cursor.fetchone()
 
+def bin2dec(input):
+#this function makes a transformation of binary IPv4 notation into decimal one (for both ip and subnet mask)
+    result = ''
+    octets = [binary_mask[i:i+8] for i in range(0, len(binary_mask), 8)]
+    decimal_octets = [int(octet, 2) for octet in octets]
+    result = '.'.join(map(str, decimal_octets))
+
+    return result
+
+def dec2bin(input):
+#This function makes a tranformation from decimal IP/netmask into binary expression
+    octets = input.split('.')
+    result = [bin(int(octet)).lstrip('0b').zfill(8) for octet in octets]
+    result = ''.join(result)
+
+    return result
+
 def decimal_to_binary(input):
 #this function exists to transmute the cidrs into various notation systems and return it. It is helpfull to make a computation in various sub functions later on
 
     if "/" in input:
         decimal = input.split('/')
         octets = decimal[0].split('.')
+        decimal_ip = decimal[0]
         if len(decimal[1]) == 2:
             bit_netmask = decimal[1]
-            binary_netmask = ''
+            binary_netmask = '' #still have to write this piece of code
         else:
             netmask_octets = decimal[1].split('.')
             binary_netmask = [bin(int(octet)).lstrip('0b').zfill(8) for octet in netmask_octets]
             binary_netmask = ''.join(binary_netmask)
             bit_netmask = binary_netmask.count('1')
     else:
+        decimal_ip = input
         octets = input.split(".")
         bit_netmask = 32
         binary_netmask = '11111111111111111111111111111111'
+        decimal_netmask = '255.255.255.255'
 
     binary_octets = [bin(int(octet)).lstrip('0b').zfill(8) for octet in octets]
     binary_ip = ''.join(binary_octets)        
 
-    result = {"ip": {"binary": binary_ip, "decimal": ""}, "netmask": {"binary": binary_netmask, "decimal": "", "bits": bit_netmask}}
+    result = {"ip": {"binary": binary_ip, "decimal": decimal_ip}, "netmask": {"binary": binary_netmask, "decimal": decimal_netmask, "bits": bit_netmask}}
 
-    return {"binary_ip": binary_ip, "netmask_bits": bit_netmask, "binary_netmask": binary_netmask}
+    return result
+#    return {"binary_ip": binary_ip, "netmask_bits": bit_netmask, "binary_netmask": binary_netmask}
 
 @LeanIPGrid.get("/")
 async def root():
@@ -67,7 +88,7 @@ async def get_cidr(cidr: str):
 
     result = decimal_to_binary(cidr)
 
-    return {"binary_ip": result}
+    return {"result": result}
 
 
 
