@@ -48,6 +48,16 @@ def ipv4_bit2bin(input):
 
     return result
 
+def ipv4_bcast_address():
+#This function will calculate broadcast address of a cidr
+
+    return result
+
+def ipv4_network_address():
+#This function will calculate network address of a cidr
+
+    return result
+
 def decimal_to_binary(input):
 #this function exists to transmute the cidrs into various notation systems and return it. It is helpfull to make a computation in various sub functions later on
 
@@ -71,7 +81,8 @@ def decimal_to_binary(input):
 
         else:
             bit_netmask = decimal[1]
-            binary_netmask = binary_netmask.ljust(int(bit_netmask),'1')
+            binary_netmask = ipv4_bit2bin(bit_netmask)
+#            binary_netmask = binary_netmask.ljust(int(bit_netmask),'1')
             decimal_netmask = bin2dec(binary_netmask)
     else:
         #if there's no / we assume it is a host address (/32)
@@ -93,16 +104,25 @@ async def root():
 @LeanIPGrid.get("/me")
 async def me():
 
+#To make it dynamic (if new column will be added) we have to first get all the column names
     cursor = con.cursor()
-    res = cursor.execute("SELECT * FROM nodes WHERE uuid = '" + this[uuid] + "'")
+    cursor.execute("PRAGMA table_info(nodes)")
+    column_name =  [column[1] for column in cursor.fetchall()]
 
-    result = res.fetchone()
+#we're getting all the data from nodes table    
+    cursor.execute("SELECT * FROM nodes where node = 'this'")
+    
+    results = cursor.fetchall()
 
-    return {result}
-
-
-
-
+#create an output which will follow key:value where the key is the name of a column and a data are relative data from all rows.
+    result = []
+    for row in results:
+        row_dict = {}
+        for i in range(len(column_name)):
+            row_dict[column_name[i]] = row[i]
+        result.append(row_dict)
+    
+    return result
 
 @LeanIPGrid.get("/v1/cidr/{cidr:path}")
 # get data about specific IP (with netmask)
@@ -228,6 +248,6 @@ async def get_all_nodes():
         result.append(row_dict)
     
     return result
-#    return {"cidr": cidr}
+#
 
 
