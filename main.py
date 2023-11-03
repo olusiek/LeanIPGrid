@@ -2,8 +2,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import sqlite3
 import uuid
+import logging
 
 LeanIPGrid = FastAPI()
+logging.basicConfig(level=logging.INFO)
 
 con = sqlite3.connect("leanipgrid.db")
 
@@ -108,7 +110,7 @@ async def me():
     cursor = con.cursor()
     cursor.execute("PRAGMA table_info(nodes)")
     column_name =  [column[1] for column in cursor.fetchall()]
-
+#    logging.info(column_name)
 #we're getting all the data from nodes table    
     cursor.execute("SELECT * FROM nodes where node = 'this'")
     
@@ -121,7 +123,8 @@ async def me():
         for i in range(len(column_name)):
             row_dict[column_name[i]] = row[i]
         result.append(row_dict)
-    
+#    logging.info(result)
+#   logging.info(result[0]['ip'])
     return result
 
 @LeanIPGrid.get("/v1/cidr/{cidr:path}")
@@ -204,14 +207,33 @@ async def list_networks():
         for i in range(len(column_name)):
             row_dict[column_name[i]] = row[i]
         result.append(row_dict)
-    
+
     return result
 
 
-
+#LeanIPGrid.get
 @LeanIPGrid.get("/v1/node/{node}")
-async def get_cidr(cidr):
-    return {"cidr": cidr}
+async def get_cidr(uuid):
+
+#To make it dynamic (if new column will be added) we have to first get all the column names
+    cursor = con.cursor()
+    cursor.execute("PRAGMA table_info(nodes)")
+    column_name =  [column[1] for column in cursor.fetchall()]
+
+#we're getting all the data from nodes table    
+    cursor.execute("SELECT * FROM nodes where uuid = '" + uuid + "'")
+    
+    results = cursor.fetchall()
+
+#create an output which will follow key:value where the key is the name of a column and a data are relative data from all rows.
+    result = []
+    for row in results:
+        row_dict = {}
+        for i in range(len(column_name)):
+            row_dict[column_name[i]] = row[i]
+        result.append(row_dict)
+    
+    return result
 
 class Node(BaseModel):
     name: str
@@ -248,6 +270,3 @@ async def get_all_nodes():
         result.append(row_dict)
     
     return result
-#
-
-
