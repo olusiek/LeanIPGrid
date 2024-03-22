@@ -236,15 +236,65 @@ async def get_cidr(uuid):
     return result
 
 class Node(BaseModel):
-    name: str
-    description: str = None
+    uuid: str
+    name: str = None
     key: str
     ip: str
     url: str
     master_key: str
+    description: str
 
 @LeanIPGrid.post("/v1/node/")
 async def add_node(node: Node):
+#    print(node.uuid)
+#    print(node.name)
+
+    cursor = con.cursor()
+    cursor.execute("SELECT key FROM nodes WHERE name = 'MASTER'")
+    result = cursor.fetchone()
+
+#    print(result[0])
+#    print(node.master_key)
+#Validation if the master_key is right one.
+
+    if (result[0] != node.master_key):
+        print("MASTER KEY NOT MATCH")
+        return 
+
+
+# let's validate if there is no host with the same IP, name or url    uuid,name,ip,key,url,description,node
+    cursor = con.cursor()
+    cursor.execute("SELECT * FROM nodes where uuid = '" + node.uuid + "'")
+    result = cursor.fetchone()
+#    print(result)
+
+    if result:
+        print("przerwanie podany uuid istnieje")
+        return
+
+    cursor = con.cursor()
+    cursor.execute("SELECT * FROM nodes where ip = '" + node.ip + "'")
+    result = cursor.fetchone()
+    print(result)
+
+    if result:
+        print("przerwanie podany ip istnieje")
+        return
+
+    cursor = con.cursor()
+    cursor.execute("SELECT * FROM nodes where url = '" + node.url + "'")
+    result = cursor.fetchone()
+    print(result)
+
+    if result:
+        print("przerwanie podany url istnieje")
+        return
+
+    
+# Add new node based on delivered data
+    cursor = con.cursor()
+    cursor.execute("INSERT INTO nodes (uuid,name,ip,key,url,description,node) VALUES ('" + node.uuid + "','" + node.name + "','" + node.ip + "','" + node.key + "','" + node.url + "','" + node.description + "','')")
+    con.commit()
     return node
 
 @LeanIPGrid.get("/v1/nodes")
