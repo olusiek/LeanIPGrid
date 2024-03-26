@@ -93,11 +93,115 @@ def decimal_to_binary(input):
         bit_netmask = '32'
         binary_netmask = binary_netmask.ljust(int(bit_netmask),'1')
         decimal_netmask = bin2dec(binary_netmask)
-        
-
 
     result = {"ip": {"binary": binary_ip, "decimal": decimal_ip}, "netmask": {"binary": binary_netmask, "decimal": decimal_netmask, "bits": bit_netmask}}
     return result
+        
+def ipv4_network_finder(cidr: str,netmask: str):
+#this function is created to find a matching network_address based on IP and netmask given. It will invoke itself if needed.
+#if the network_address is not defined, the netmask will be changed by changing last 1 with 0. This loop occurs untill there's a proper 
+# network address found in local database. The answer can be:
+# - locally defined network (then the answer consists GLOBAL and LOCAL params)
+# - network defined in another node (the answer consists of url of another node and global parameters available)
+# this function must be invoked with binary expresion on input for both parameters.
+
+    '''
+    print(cidr)
+    print(netmask)
+
+
+    if len(cidr) != 32 or not all(bit in '01' for bit in cidr):
+        print('invalid cidr')
+        return 
+
+    if len(netmask) != 32 or not all(bit in '01' for bit in netmask):
+        print('invalid netmask')
+        return
+    
+    network_address = ''.join(str(int(bit_ip) & int(bit_mask)) for bit_ip, bit_mask in zip(cidr, netmask))
+    print(network_address)
+
+    first_zero = netmask.find('0')
+    print(first_zero)
+    if first_zero == 0:
+        print("skonczylem przeszukiwanie, brak wynikow")
+        return
+
+    cursor = con.cursor()
+    querry = "SELECT * FROM ipv4_networks WHERE network_address_binary = '" + network_address + "' AND subnet_mask_binary = '" + netmask + "'"
+    if debug == 1:
+        print(querry)
+    
+    cursor.execute(querry)
+
+    result = cursor.fetchone()
+
+    print(result)
+
+    new_zero = netmask.find('0') - 1
+
+    network_portion = str('1') * new_zero
+    print(network_portion)
+    print(netmask)
+
+    netmask = network_portion.ljust(32,'0')
+    
+    netmask_dec = bin2dec(netmask)
+    print("decimal value: " + netmask_dec)
+    print("binary value: " + netmask)
+
+    ipv4_network_finder(cidr,netmask)
+
+    return
+'''
+    if len(cidr) != 32 or not all(bit in '01' for bit in cidr):
+#        print('invalid cidr')
+        return 
+
+    if len(netmask) != 32 or not all(bit in '01' for bit in netmask):
+#        print('invalid netmask')
+        return
+    
+    network_address = ''.join(str(int(bit_ip) & int(bit_mask)) for bit_ip, bit_mask in zip(cidr, netmask))
+#    print("Network address: " + network_address)
+
+    first_zero = netmask.find('0')
+#    print(first_zero)
+    if first_zero == 0:
+        print("skonczylem przeszukiwanie, brak wynikow")
+        return
+
+    cursor = con.cursor()
+    querry = "SELECT * FROM ipv4_networks WHERE network_address_binary = '" + network_address + "' AND subnet_mask_binary = '" + netmask + "'"
+#    if debug == 1:
+#        print(querry)
+    
+    cursor.execute(querry)
+
+    result = cursor.fetchone()
+
+    if result == None:
+        new_zero = netmask.find('0') - 1
+        network_portion = str('1') * new_zero
+#        print(network_portion)
+#        print(netmask)
+        netmask = network_portion.ljust(32,'0')
+
+        ipv4_network_finder(cidr,netmask)
+    else: 
+        print("----------------------------------")
+        print(result)
+        print("----------------------------------")
+
+#        print("ZNALAZLEM DOPASOWANIE: " + result["network_address"])
+
+#        netmask_dec = bin2dec(netmask)
+#        print("decimal value: " + netmask_dec)
+
+    print(type(result))
+    return result
+
+
 
 @LeanIPGrid.get("/")
 async def root():
@@ -136,14 +240,49 @@ async def get_cidr(cidr: str):
     return {"result": result}
 
 
-
-
-
-
 @LeanIPGrid.get("/v1/ipv4/network/{network_address}")
-#will present all the information related to specific network based on network address
+# will present all the information related to specific network based on network address. 
+# if the network adress is not managed locally, it will return global params and node who is managing (url)
+# if managed locally both global and local params will be returned.
+
 async def get_specific_network(network):
 
+    result = 1
+    network_address = network.split("/")
+
+# first we have to check what notation is being used. to do so we're assuming 
+# for network portion:
+# if len == 32 and consists only 0 and 1 ->binary format (do nothing)
+# if len between 7 and 15 and consists only numbers and 3 dots - decimal format (convert to binary)
+# else return erros
+# for netmask:
+# if is a number between 0 and 32 - bits notation (must be converted to binary)
+# if len == 32 and consists only 0 and 1 - binary format (do nothing)
+# if len between 7 and 15 and consists only numners and 3 dots - decimal format (convert to binary)
+    if len(network_address[0]) == 32:
+        cidr = network_address[0] 
+    elif 7 <= len(network_address[0]) <= 15:
+        cidr =  dec2bin(network_address[0])
+    else:
+        return {"ERROR WRONG SUBNET MASK"}
+
+    if len(network_address[1]) == 32:
+        netmask = network_address[1] 
+    elif 7 <= len(network_address[1]) <= 15:
+        netmask =  dec2bin(network_address[1])
+    elif 1 <= len(network_address[1]) <= 2:
+        netmask = ipv4_bit2bin(network_address[1])
+    elif network_address[1] == None:
+        netmask = ipv4_bit2bin(32)
+    else:
+        return {"ERROR WRONG SUBNET MASK"}
+    
+    logging.info(cidr)
+    logging.info(netmask)
+    result = ipv4_network_finder(cidr,netmask)
+    logging.info(result)
+    
+    '''
 #Get the current data about all the fields in a table - POSSIBLY CAN BE MOVED TO INDEPENDANT FUNCTION AND REUSED ELSEWHERE
     cursor = con.cursor()
     cursor.execute("PRAGMA table_info(ipv4_networks)")
@@ -155,6 +294,7 @@ async def get_specific_network(network):
 
     cursor.execute("SELECT * FROM ipv4_networks WHERE network_address = '" + network_address[0] +"'")
     result = cursor.fetchone()
+    '''
 
     return {"network": result}
 
@@ -249,6 +389,7 @@ async def add_node(node: Node):
 #    print(node.uuid)
 #    print(node.name)
 
+#Probably this one must be moved into a dedicated function
     cursor = con.cursor()
     cursor.execute("SELECT key FROM nodes WHERE name = 'MASTER'")
     result = cursor.fetchone()
