@@ -105,55 +105,6 @@ def ipv4_network_finder(cidr: str,netmask: str):
 # - network defined in another node (the answer consists of url of another node and global parameters available)
 # this function must be invoked with binary expresion on input for both parameters.
 
-    '''
-    print(cidr)
-    print(netmask)
-
-
-    if len(cidr) != 32 or not all(bit in '01' for bit in cidr):
-        print('invalid cidr')
-        return 
-
-    if len(netmask) != 32 or not all(bit in '01' for bit in netmask):
-        print('invalid netmask')
-        return
-    
-    network_address = ''.join(str(int(bit_ip) & int(bit_mask)) for bit_ip, bit_mask in zip(cidr, netmask))
-    print(network_address)
-
-    first_zero = netmask.find('0')
-    print(first_zero)
-    if first_zero == 0:
-        print("skonczylem przeszukiwanie, brak wynikow")
-        return
-
-    cursor = con.cursor()
-    querry = "SELECT * FROM ipv4_networks WHERE network_address_binary = '" + network_address + "' AND subnet_mask_binary = '" + netmask + "'"
-    if debug == 1:
-        print(querry)
-    
-    cursor.execute(querry)
-
-    result = cursor.fetchone()
-
-    print(result)
-
-    new_zero = netmask.find('0') - 1
-
-    network_portion = str('1') * new_zero
-    print(network_portion)
-    print(netmask)
-
-    netmask = network_portion.ljust(32,'0')
-    
-    netmask_dec = bin2dec(netmask)
-    print("decimal value: " + netmask_dec)
-    print("binary value: " + netmask)
-
-    ipv4_network_finder(cidr,netmask)
-
-    return
-'''
     if len(cidr) != 32 or not all(bit in '01' for bit in cidr):
 #        print('invalid cidr')
         return 
@@ -282,20 +233,6 @@ async def get_specific_network(network):
     result = ipv4_network_finder(cidr,netmask)
     logging.info(result)
     
-    '''
-#Get the current data about all the fields in a table - POSSIBLY CAN BE MOVED TO INDEPENDANT FUNCTION AND REUSED ELSEWHERE
-    cursor = con.cursor()
-    cursor.execute("PRAGMA table_info(ipv4_networks)")
-    column_name = [column[1] for column in cursor.fetchall()]
-
-    network_address = network.split("/")
-
- #   return {"network": network_address}
-
-    cursor.execute("SELECT * FROM ipv4_networks WHERE network_address = '" + network_address[0] +"'")
-    result = cursor.fetchone()
-    '''
-
     return {"network": result}
 
 
