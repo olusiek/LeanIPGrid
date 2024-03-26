@@ -138,7 +138,7 @@ def ipv4_network_finder(cidr: str,netmask: str):
 #        print(netmask)
         netmask = network_portion.ljust(32,'0')
 
-        ipv4_network_finder(cidr,netmask)
+        result = ipv4_network_finder(cidr,netmask)
     else: 
         print("----------------------------------")
         print(result)
