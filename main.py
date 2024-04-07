@@ -398,3 +398,55 @@ async def get_all_nodes():
         result.append(row_dict)
     
     return result
+
+@LeanIPGrid.post("/v1/ipv4/network")
+async def add_ipv4_network(cidr: str, netmask: str, node_uuid: str):
+#Function to add the new network definition with all the required global and local attributes.
+# Basics: 
+# IP address (range) - can be decimal/binary (must be converted to binary)
+# netmask - can be decimal/binary/bits (must be converted to binary)
+# 
+    if len(cidr) == 32:
+        cidr = cidr
+    elif 7 <= len(cidr) <= 15:
+        cidr =  dec2bin(cidr)
+    else:
+        return {"ERROR WRONG cidr"}
+
+    if len(netmask) == 32:
+        netmask = netmask 
+    elif 7 <= len(netmask) <= 15:
+        netmask =  dec2bin(netmask)
+    elif 1 <= len(netmask) <= 2:
+        netmask = ipv4_bit2bin(netmask)
+    elif netmask == None:
+        netmask = ipv4_bit2bin(32)
+    else:
+        return {"ERROR WRONG CIDR"}
+    
+
+    network_address = ''.join(str(int(bit_ip) & int(bit_mask)) for bit_ip, bit_mask in zip(cidr, netmask))
+
+    logging.info(cidr)
+    logging.info(netmask)
+
+
+    result = "CIDR:" + cidr + " Netmask: " + netmask + " NodeUUID: " + node_uuid + " Network address: " + network_address
+
+    cursor = con.cursor()
+    querry = "SELECT uuid FROM ipv4_networks WHERE network_address_binary = '" + network_address + "' AND subnet_mask_binary = '" + netmask + "'"
+
+    logging.info(querry)
+    cursor.execute(querry)
+
+    result = cursor.fetchone()
+
+    print(result)
+
+    if result == None:
+        print("update bazy")
+#        querry = "INSERT INTO ipv4_networks (uuid,network_address,network_address_binary,subnet_mask,subnet_mask_binary,network_broadcast,network_broadcast_binary,node_uuid,ext_attr1) VALUES ('" + uuid.uuid4() + "')"
+    else:
+        print("ERROR: requested network already exists in database")
+
+    return result
