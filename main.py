@@ -50,10 +50,23 @@ def ipv4_bit2bin(input):
 
     return result
 
-def ipv4_bcast_address():
-#This function will calculate broadcast address of a cidr
+def ipv4_bcast_address(network_address_binary, subnet_mask_binary):
+    # logical AND between network address and subnet mask
+    network_address = int(network_address_binary, 2)
+    subnet_mask = int(subnet_mask_binary, 2)
+    network = network_address & subnet_mask
 
-    return result
+    # Logical NOT on subnet netmask
+    inverted_subnet_mask = ~subnet_mask & 0xFFFFFFFF  # Zastosowanie maski 32-bitowej
+
+    # Logical OR between logical NOT below and network address
+    broadcast = network | inverted_subnet_mask
+
+    # changing the format into binary
+    broadcast_binary = format(broadcast, '032b')
+
+    return broadcast_binary
+
 
 def ipv4_network_address():
 #This function will calculate network address of a cidr
@@ -434,10 +447,10 @@ async def add_ipv4_network(cidr: str, netmask: str, node_uuid: str):
     result = "CIDR:" + cidr + " Netmask: " + netmask + " NodeUUID: " + node_uuid + " Network address: " + network_address
 
     cursor = con.cursor()
-    querry = "SELECT uuid FROM ipv4_networks WHERE network_address_binary = '" + network_address + "' AND subnet_mask_binary = '" + netmask + "'"
+    query = "SELECT uuid FROM ipv4_networks WHERE network_address_binary = '" + network_address + "' AND subnet_mask_binary = '" + netmask + "'"
 
-    logging.info(querry)
-    cursor.execute(querry)
+    logging.info(query)
+    cursor.execute(query)
 
     result = cursor.fetchone()
 
@@ -445,7 +458,24 @@ async def add_ipv4_network(cidr: str, netmask: str, node_uuid: str):
 
     if result == None:
         print("update bazy")
-#        querry = "INSERT INTO ipv4_networks (uuid,network_address,network_address_binary,subnet_mask,subnet_mask_binary,network_broadcast,network_broadcast_binary,node_uuid,ext_attr1) VALUES ('" + uuid.uuid4() + "')"
+        network_address_dec = bin2dec(network_address)
+        netmask_dec = bin2dec(netmask)
+        new_uuid = uuid.uuid4()
+        network_broadcast_binary = ipv4_bcast_address(network_address,netmask)
+        print('Network bcast binary:')
+        logging.info(network_broadcast_binary)
+        network_broadcast_dec = bin2dec(network_broadcast_binary)
+        logging.info(network_broadcast_dec)
+        print('-----')
+        query = f"INSERT INTO ipv4_networks \
+                    (uuid,network_address,network_address_binary,subnet_mask,subnet_mask_binary, \
+                    network_broadcast,network_broadcast_binary,node_uuid) \
+                    VALUES \
+                    ('{new_uuid}','{network_address_dec}','{network_address}','{netmask_dec}','{netmask}', \
+                    '{network_broadcast_dec}','{network_broadcast_binary}','{node_uuid}')"
+        logging.info(query)
+        con.cursor()
+        cursor.execute(query)
     else:
         print("ERROR: requested network already exists in database")
 
