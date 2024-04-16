@@ -476,6 +476,9 @@ async def add_ipv4_network(cidr: str, netmask: str, node_uuid: str):
         logging.info(query)
         con.cursor()
         cursor.execute(query)
+        con.commit()
+        
+
     else:
         print("ERROR: requested network already exists in database")
 
